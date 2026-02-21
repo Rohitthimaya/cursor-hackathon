@@ -5,6 +5,7 @@ Listens for messages, forwards to AI at localhost:5000/process, and replies.
 
 import asyncio
 import os
+from datetime import datetime
 
 import aiohttp
 import discord
@@ -13,7 +14,16 @@ from dotenv import load_dotenv
 load_dotenv()
 
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
-AI_ENDPOINT = "http://localhost:5000/process"
+AI_PORT = os.getenv("AI_PORT", "5001")  # 5000 often used by macOS AirPlay
+AI_ENDPOINT = f"http://localhost:{AI_PORT}/process"
+LOG_FILE = os.path.join(os.path.dirname(__file__), "discord_bot.log")
+
+
+def log(msg: str):
+    """Print to console and append to log file (view in Cursor)."""
+    print(msg)
+    with open(LOG_FILE, "a", encoding="utf-8") as f:
+        f.write(f"[{datetime.now().isoformat()}] {msg}\n")
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -34,8 +44,8 @@ def build_payload(message: discord.Message) -> dict:
 
 @client.event
 async def on_ready():
-    print(f"Logged in as {client.user} (ID: {client.user.id})")
-    print("Listening for messages...")
+    log(f"Logged in as {client.user} (ID: {client.user.id})")
+    log("Listening for messages...")
 
 
 @client.event
@@ -43,8 +53,8 @@ async def on_message(message: discord.Message):
     if message.author == client.user:
         return
 
-    # Verification: log raw content and sender to terminal
-    print(f"[VERIFY] Sender: {message.author} | Content: {message.content}")
+    # Verification: log raw content and sender (console + discord_bot.log)
+    log(f"[VERIFY] Sender: {message.author} | Content: {message.content}")
 
     payload = build_payload(message)
 
