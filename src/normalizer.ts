@@ -18,7 +18,7 @@ export function normalizeMessage(message: IncomingMessage & Record<string, unkno
 
   return {
     ...message,
-    platform: (message.platform ?? "slack") as "slack" | "telegram" | "whatsapp",
+    platform: (message.platform ?? "slack") as "slack" | "telegram" | "whatsapp" | "discord",
     group_id: String(message.group_id || "").trim(),
     user_id: String(message.user_id ?? m.user ?? "").trim() || "unknown",
     user_name: String(message.user_name ?? m.user ?? message.user_id ?? "Unknown").trim(),

@@ -10,6 +10,7 @@
     "setup:milvus": "bash scripts/create-milvus-collection.sh"
   },
   "dependencies": {
+    "discord.js": "^14.14.1",
     "express": "^4.21.0",
     "dotenv": "^16.4.5",
     "mongodb": "^6.10.0"

@@ -2,7 +2,7 @@
  * Jethalal AI Brain - Type Definitions
  */
 
-export type Platform = "slack" | "telegram" | "whatsapp";
+export type Platform = "slack" | "telegram" | "whatsapp" | "discord";
 
 /** Incoming message from bots (POST /api/message) */
 export interface IncomingMessage {
