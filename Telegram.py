@@ -1,51 +1,46 @@
 #BOT_TOKEN = "8363596711:AAE9ypTeGLftBws2s2cn9trfb6cLjMawtbk"
 
-
 import json
-# import requests   # <-- keep this for later when API is ready
-
+import requests
 from telegram import Update
 from telegram.ext import ApplicationBuilder, MessageHandler, ContextTypes, filters
 
 BOT_TOKEN = "8363596711:AAE9ypTeGLftBws2s2cn9trfb6cLjMawtbk"
+API_URL = "https://cursor-hackathon-f84m.onrender.com/api/message"
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message:
         return
 
     message_data = {
-        "id": update.message.message_id,
-        "platform": "telegram",
-        "group_id": str(update.effective_chat.id),
-        "user": update.effective_user.username or update.effective_user.first_name,
-        "message": update.message.text,
-        "timestamp": update.message.date.isoformat()
-    }
+    "group_id": str(update.effective_chat.id),
+    "content": update.message.text,
+    "user": update.effective_user.username or update.effective_user.first_name,
+    "platform": "telegram",
+    "timestamp": update.message.date.isoformat()
+}
 
-    print("\n===== MESSAGE RECEIVED =====")
+    print("\n===== SENDING TO SERVER =====")
     print(json.dumps(message_data, indent=4))
-    print("============================\n")
 
-    # -------------------------------
-    # 🔵 FUTURE: SEND TO AI SERVER
-    # -------------------------------
-    """
-    response = requests.post(
-        "http://your-ai-server-url",
-        json=message_data
-    )
+    try:
+        response = requests.post(API_URL, json=message_data, timeout=10)
 
-    if response.status_code == 200:
-        ai_reply = response.json().get("reply")
-        if ai_reply:
-            await update.message.reply_text(ai_reply)
-    """
-    # -------------------------------
+        print("Status Code:", response.status_code)
+        print("Response:", response.text)
+
+        # If server sends reply field
+        if response.status_code == 200:
+            data = response.json()
+
+            if "reply" in data and data["reply"]:
+                await update.message.reply_text(data["reply"])
+
+    except Exception as e:
+        print("ERROR:", e)
 
 def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
-
-    # VERY IMPORTANT: receive EVERYTHING
     app.add_handler(MessageHandler(filters.ALL, handle_message))
 
     print("Bridge bot running...")
