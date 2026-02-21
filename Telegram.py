@@ -29,12 +29,14 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         print("Status Code:", response.status_code)
         print("Response:", response.text)
 
-        # If server sends reply field
         if response.status_code == 200:
             data = response.json()
 
-            if "reply" in data and data["reply"]:
-                await update.message.reply_text(data["reply"])
+            if data.get("should_respond"):
+                ai_text = data.get("response", {}).get("content")
+
+                if ai_text:
+                    await update.message.reply_text(ai_text)
 
     except Exception as e:
         print("ERROR:", e)
