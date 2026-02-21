@@ -1,0 +1,23 @@
+{
+  "name": "jethalal",
+  "version": "1.0.0",
+  "description": "Socially Intelligent AI Assistant for Group Chats",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "start": "node dist/index.js",
+    "setup:milvus": "bash scripts/create-milvus-collection.sh"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "dotenv": "^16.4.5",
+    "mongodb": "^6.10.0"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.9.0",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.6.3"
+  }
+}
