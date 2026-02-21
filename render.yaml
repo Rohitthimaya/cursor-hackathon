@@ -1,0 +1,14 @@
+# Render Blueprint - Deploy Discord bot
+# https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: discord-bot
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python discord_bot.py
+    envVars:
+      - key: DISCORD_TOKEN
+        sync: false
+      - key: AI_ENDPOINT
+        value: https://cursor-hackathon-f84m.onrender.com/api/message

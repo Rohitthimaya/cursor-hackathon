@@ -1,6 +1,7 @@
 .env
 __pycache__/
 discord_bot.log
+whatsapp_bridge.log
 *.pyc
 .venv/
 venv/
