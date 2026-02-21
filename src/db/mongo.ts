@@ -3,13 +3,24 @@
  * Stores messages and group state for long-term memory.
  */
 
-// Placeholder for MongoDB client - wire up when MONGO_URL is set
-export async function getMongoClient() {
+let cachedDb: Awaited<ReturnType<typeof connect>> = null;
+
+async function connect() {
   const url = process.env.MONGO_URL;
   if (!url) return null;
+  try {
+    const { MongoClient } = await import("mongodb");
+    const client = new MongoClient(url);
+    await client.connect();
+    return client.db("jethalal");
+  } catch (e) {
+    console.error("[MongoDB] Connection failed:", e);
+    return null;
+  }
+}
 
-  const { MongoClient } = await import("mongodb");
-  const client = new MongoClient(url);
-  await client.connect();
-  return client.db("jethalal");
+export async function getMongoClient() {
+  if (cachedDb) return cachedDb;
+  cachedDb = await connect();
+  return cachedDb;
 }

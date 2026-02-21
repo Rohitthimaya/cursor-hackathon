@@ -112,8 +112,15 @@ src/
     └── mongo.ts       # MongoDB client
 ```
 
-## Extending
+## MongoDB & Vector DB (live)
 
-- **MongoDB**: Implement real queries in `context-loader.ts` and `memory-updater.ts` using `getMongoClient()` from `db/mongo.ts`
-- **Vector DB**: Implement embedding + search in `rag.ts` when `VECTOR_DB_URL` is set
+When `MONGO_URL` is set:
+- **MongoDB**: Stores every user message and AI response in `messages` collection
+- **context-loader**: Loads recent messages for prompt context
+
+When `VECTOR_DB_URL` and `VECTOR_DB_API_KEY` are set:
+- **Embeddings**: Uses `AIML_API_TOKEN` + `/embeddings` (text-embedding-ada-002)
+- **Milvus**: Inserts embeddings for each message; RAG searches for relevant past messages
+
+Add `MONGO_URL`, `VECTOR_DB_URL`, `VECTOR_DB_API_KEY` to Render env vars to persist data.
 - **AIML API**: Configure `AIML_API_TOKEN` and `AIML_API_URL` for any OpenAI-compatible LLM

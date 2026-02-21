@@ -1,21 +1,17 @@
 import type { RetrievedContext } from "./types";
+import { createEmbedding } from "./embeddings";
+import { searchVectors } from "./db/vector";
 
 /**
- * Retrieves relevant past messages from Vector DB for RAG (Retrieval-Augmented Generation).
- * In production: embed query, search vector DB, return top-k similar messages.
+ * Retrieves relevant past messages from Vector DB for RAG.
  */
 export async function retrieveFromVectorDB(
   groupId: string,
   query: string
 ): Promise<RetrievedContext> {
-  // TODO: Replace with actual Vector DB query
-  // 1. Embed query using embedding API
-  // 2. Search vector DB for similar messages in this group
-  // 3. Return top-k results with relevance scores
+  const embedding = await createEmbedding(query);
+  if (embedding.length === 0) return { messages: [] };
 
-  const placeholder: RetrievedContext = {
-    messages: [],
-  };
-
-  return placeholder;
+  const results = await searchVectors(groupId, embedding, 5);
+  return { messages: results };
 }

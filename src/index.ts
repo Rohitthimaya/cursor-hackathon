@@ -17,14 +17,21 @@ app.post("/api/message", async (req, res) => {
   const message = req.body as IncomingMessage;
 
   // Validate required fields
-  if (!message?.group_id || !message?.content) {
+  if (!message?.group_id) {
     return res.status(400).json({
-      error: "Missing required fields: group_id, content",
+      error: "Missing required field: group_id",
+    });
+  }
+  const raw = message as unknown as Record<string, unknown>;
+  const content = message?.content ?? raw?.message ?? raw?.text;
+  if (content === undefined || content === null || String(content).trim() === "") {
+    return res.status(400).json({
+      error: "Missing or empty required field: content (or message/text)",
     });
   }
 
-  // 1. Normalize input
-  const normalized = normalizeMessage(message);
+  // 1. Normalize input (handles platform-specific field names)
+  const normalized = normalizeMessage(message as IncomingMessage & Record<string, unknown>);
 
   // 2. Acquire per-group lock
   let releaseLock: (() => void) | undefined;
@@ -36,14 +43,22 @@ app.post("/api/message", async (req, res) => {
   }
 
   try {
-    // 3. Load context from MongoDB + Vector DB
+    console.log(`[Jethalal] Incoming: ${normalized.platform}/${normalized.group_id} from ${normalized.user_name}: "${normalized.content_trimmed.slice(0, 60)}..."`);
+
+    // 3. Load context from MongoDB
     const context = await loadContext(normalized.group_id);
+    if (context.recent_messages.length > 0) {
+      console.log(`[Jethalal] Loaded ${context.recent_messages.length} recent messages from MongoDB`);
+    }
 
     // 4. Retrieve relevant past messages (RAG)
     const retrieved = await retrieveFromVectorDB(
       normalized.group_id,
       normalized.content_trimmed
     );
+    if (retrieved.messages.length > 0) {
+      console.log(`[Jethalal] RAG: found ${retrieved.messages.length} relevant past messages`);
+    }
 
     // 5. Construct system + user prompt
     const { system, user } = buildPrompt(normalized, context, retrieved);
@@ -58,6 +73,12 @@ app.post("/api/message", async (req, res) => {
 
     // 7. Decision engine: should AI respond?
     const finalResponse = decisionEngine(aiResponse, context);
+
+    if (finalResponse.should_respond && finalResponse.response?.content) {
+      console.log(`[Jethalal] Replying: "${finalResponse.response.content.slice(0, 60)}..."`);
+    } else {
+      console.log(`[Jethalal] No reply (should_respond=false)`);
+    }
 
     // 8. Update memory (Mongo + Vector DB)
     await updateMemory(normalized, finalResponse);

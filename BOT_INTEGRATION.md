@@ -5,7 +5,7 @@ Share this with friends building Slack, WhatsApp, or Telegram bots.
 ## Base URL
 
 ```
-https://your-jethalal-server.com/api
+https://cursor-hackathon-f84m.onrender.com/api
 ```
 
 **Local dev:** `http://localhost:3001/api` (or whatever PORT you set)
@@ -73,7 +73,7 @@ If `should_respond` is `false`, `response` is omitted.
 
 1. User sends a message in Slack/Telegram/WhatsApp.
 2. Your bot receives it, normalizes it to the request schema.
-3. Bot POSTs to `https://your-server.com/api/message`.
+3. Bot POSTs to `https://cursor-hackathon-f84m.onrender.com/api/message`.
 4. If `should_respond === true`, bot sends `response.content` to the group.
 5. Bot uses `response.type`, `response.options`, `response.mention_user` per platform.
 
@@ -82,7 +82,7 @@ If `should_respond` is `false`, `response` is omitted.
 ## cURL Example
 
 ```bash
-curl -X POST https://your-server.com/api/message \
+curl -X POST https://cursor-hackathon-f84m.onrender.com/api/message \
   -H "Content-Type: application/json" \
   -d '{
     "platform": "slack",
