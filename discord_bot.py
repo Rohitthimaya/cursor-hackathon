@@ -5,6 +5,7 @@ Listens for messages, forwards to AI, replies. Also exposes /discord/send for AI
 
 import asyncio
 import os
+import sys
 from datetime import datetime
 
 import aiohttp
@@ -27,10 +28,12 @@ SEND_PORT = int(os.getenv("PORT", os.getenv("BOT_SEND_PORT", "3002")))
 
 
 def log(msg: str):
-    """Print to console and append to log file (view in Cursor)."""
-    print(msg)
+    """Print to console and append to log file. Flush immediately so logs appear."""
+    line = f"[{datetime.now().isoformat()}] {msg}"
+    print(line, flush=True)
     with open(LOG_FILE, "a", encoding="utf-8") as f:
-        f.write(f"[{datetime.now().isoformat()}] {msg}\n")
+        f.write(line + "\n")
+        f.flush()
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -101,35 +104,42 @@ async def on_message(message: discord.Message):
     if message.author == client.user:
         return
 
-    # Verification: log raw content and sender (console + discord_bot.log)
     log(f"[VERIFY] Sender: {message.author} | Content: {message.content}")
 
     payload = build_payload(message)
+    log(f"[SEND→AI] POST {AI_ENDPOINT} | content={message.content[:50]}")
 
     async with aiohttp.ClientSession() as session:
         try:
-            async with session.post(AI_ENDPOINT, json=payload) as resp:
-                if resp.status == 200:
+            timeout = aiohttp.ClientTimeout(total=15)
+            async with session.post(AI_ENDPOINT, json=payload, timeout=timeout) as resp:
+                status = resp.status
+                if status == 200:
                     content_type = resp.headers.get("Content-Type", "")
                     if "application/json" in content_type:
                         data = await resp.json()
-                        if data.get("should_respond"):
-                            raw = data.get("response", data.get("message"))
-                            # AI returns {"type": "text", "content": "..."} or plain string
-                            if isinstance(raw, dict):
-                                reply = raw.get("content", str(raw))
-                            else:
-                                reply = str(raw) if raw else str(data)
-                            await message.channel.send(reply)
+                        should_respond = data.get("should_respond")
+                        raw = data.get("response", data.get("message"))
+                        log(f"[RECV←AI] status=200 | should_respond={should_respond} | response={str(raw)[:80]}")
+                        if should_respond:
+                            # Same extraction as Telegram: (response or {}).get("content")
+                            ai_text = (raw.get("content") if isinstance(raw, dict) else None) or (str(raw) if raw else str(data))
+                            if ai_text:
+                                await message.channel.send(ai_text)
+                            log(f"[SENT→Discord] Reply: {reply[:50]}...")
                     else:
                         reply = await resp.text()
                         await message.channel.send(reply)
+                        log(f"[RECV←AI] status=200 (text) | [SENT→Discord] Reply sent")
                 else:
                     text = await resp.text()
-                    await message.channel.send(f"AI error ({resp.status}): {text[:500]}")
+                    log(f"[RECV←AI] status={status} | error={text[:100]}")
+                    await message.channel.send(f"AI error ({status}): {text[:500]}")
         except aiohttp.ClientError as e:
+            log(f"[ERROR] Could not reach AI: {e}")
             await message.channel.send(f"Could not reach AI: {e}")
         except Exception as e:
+            log(f"[ERROR] {e}")
             await message.channel.send(f"Error: {e}")
 
 
