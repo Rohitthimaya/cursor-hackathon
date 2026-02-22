@@ -42,6 +42,9 @@ export function startDiscordBot(): void {
     const userId = message.author?.id || "unknown";
     const userName = message.author?.username || message.author?.globalName || "User";
 
+    // Detect if bot was @mentioned (Discord format: <@BOT_ID>)
+    const isDirectMention = client.user && message.mentions?.users?.has(client.user.id);
+
     const normalized = normalizeMessage({
       platform: "discord",
       group_id: channelId || "unknown",
@@ -58,7 +61,7 @@ export function startDiscordBot(): void {
         releaseLock = await acquireGroupLock(normalized.group_id);
         const context = await loadContext(normalized.group_id);
         const retrieved = await retrieveFromVectorDB(normalized.group_id, normalized.content_trimmed);
-        const { system, user } = buildPrompt(normalized, context, retrieved);
+        const { system, user } = buildPrompt(normalized, context, retrieved, { isDirectMention: !!isDirectMention });
         const aiResponse = await callAIMLAPI(system, user, "discord", normalized.group_id);
         const finalResponse = decisionEngine(aiResponse, context);
 
@@ -66,7 +69,9 @@ export function startDiscordBot(): void {
 
         if (finalResponse.should_respond && finalResponse.response?.content && message.channel) {
           await message.reply(finalResponse.response.content);
-          console.log(`[Discord] Sent AI reply to channel ${channelId}`);
+          console.log(`[Discord] ✓ Replied to ${userName}: "${finalResponse.response.content.slice(0, 50)}..."`);
+        } else {
+          console.log(`[Discord] No reply (AI chose not to respond)`);
         }
       } catch (err) {
         console.error("[Discord] Error:", err);

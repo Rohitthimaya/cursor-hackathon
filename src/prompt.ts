@@ -12,12 +12,14 @@ Output JSON with:
 - should_respond: true only if your response adds value (not for every message)
 - response: { type: "text"|"poll"|"reaction"|"dm", content: string, options?: string[], mention_user?: string }
 
-Rules: No spam. No responding to every message. Be concise. Use emoji sparingly.`;
+Rules: No spam. Be concise. Use emoji sparingly.
+When the user directly @mentions you or says hello/greetings, you MUST respond (should_respond: true).`;
 
 export function buildPrompt(
   message: NormalizedMessage,
   context: GroupContext,
-  retrieved: RetrievedContext
+  retrieved: RetrievedContext,
+  opts?: { isDirectMention?: boolean }
 ): { system: string; user: string } {
   const recentText = context.recent_messages
     .slice(-10)
@@ -33,12 +35,17 @@ export function buildPrompt(
           .join("\n")
       : "";
 
+  const mentionHint = opts?.isDirectMention
+    ? "\nIMPORTANT: The user has directly @mentioned/pinged you. You MUST respond with should_respond: true and a helpful, friendly reply.\n"
+    : "";
+
   const userPrompt = `Group: ${message.group_id}
 Recent messages:
 ${recentText || "(no recent messages)"}
 ${ragText}
 
 New message from ${message.user_name}: "${message.content_trimmed}"
+${mentionHint}
 
 Respond with JSON: { "should_respond": boolean, "response": { "type": "text", "content": "...", ... } }`;
 
